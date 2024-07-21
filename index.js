@@ -23,6 +23,18 @@ const videos = {
 		threshold: 0.1 * bright,
 		invert: false,
 	},
+	"admiral_potato-flow_1.webm": {
+		threshold: 0.3 * bright,
+		invert: true,
+	},
+	"admiral_potato-process_growth_pains.webm": {
+		threshold: 0.2 * bright,
+		invert: true,
+	},
+	"admiral_potato-circular_overlap_0.webm": {
+		threshold: 0.7 * bright,
+		invert: false,
+	},
 };
 Object.entries(videos).forEach(([name, config]) => {
 	const option = document.createElement("option");
