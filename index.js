@@ -1,11 +1,44 @@
 const canvas = document.getElementById("canny");
 const startButton = document.getElementById("start-button");
+const videoSelect = document.getElementById("video-select");
 const { width, height } = canvas;
 const video = document.getElementById("blobby");
 const context = canvas.getContext("2d", { willReadFrequently: true });
 context.imageSmoothingEnabled = true;
 context.imageSmoothingQuality = "high";
 console.log("Context?", context);
+
+let hasGestured = false;
+const bright = 255 * 3;
+const videos = {
+	"tatsuya_m-splitting_lens.mp4": {
+		threshold: 0.3 * bright,
+		invert: true,
+	},
+	"admiral_potato-electric_branches.webm": {
+		threshold: 0.9 * bright,
+		invert: false,
+	},
+};
+Object.entries(videos).forEach(([name, config]) => {
+	const option = document.createElement("option");
+	option.innerText = name;
+	option.value = name;
+	videoSelect.appendChild(option);
+});
+let currentVideoConfig = null;
+const setCurrentVideoName = (name) => {
+	currentVideoConfig = videos[name];
+	video.src = `videos/${name}`;
+	video.playbackRate = 0.25;
+	if (hasGestured) {
+		video.play();
+	}
+};
+videoSelect.addEventListener("change", (event) => {
+	hasGestured = true;
+	setCurrentVideoName(event.target.value);
+});
 
 const uniqueColors = [
 	[255, 0, 0],
@@ -16,11 +49,9 @@ const uniqueColors = [
 	[0, 255, 255],
 ];
 
-const bright = 255 * 3;
-const threshold = 0.3 * bright;
 const contrast = (r, g, b) => {
 	const total = r + g + b;
-	return total > threshold;
+	return total > currentVideoConfig.threshold;
 };
 
 const getPixelOffset = (x, y) => x + y * width;
@@ -35,8 +66,12 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 	const blob = {
 		blobId,
 		uniqueColor: uniqueColors[(blobId - 1) % uniqueColors.length],
+		totalPixelCount: 0,
+		centroid: null,
 	};
 	blobs.push(blob);
+	let sumOfX = 0;
+	let sumOfY = 0;
 	while (coordsToProcess.length > 0) {
 		const coords = coordsToProcess.pop();
 		if (
@@ -59,6 +94,9 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 		}
 		// if we reach this point, that pixel is part of this blob.
 		// handle it...
+		blob.totalPixelCount += 1;
+		sumOfX += coords[0];
+		sumOfY += coords[1];
 		membership[offset] = blob.blobId;
 		const data = imageData.data;
 		const i = offset * 4;
@@ -75,6 +113,10 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 		coordsToProcess.push([coords[0], coords[1] + 1]);
 		coordsToProcess.push([coords[0] + 1, coords[1] + 1]);
 	}
+	blob.centroid = [
+		sumOfX / blob.totalPixelCount,
+		sumOfY / blob.totalPixelCount,
+	];
 };
 const getBlobForPixel = (membership, blobs, x, y) => {
 	const i = membership[getPixelOffset(x, y)];
@@ -90,7 +132,9 @@ const loopy = () => {
 	context.globalCompositeOperation = "source-over";
 	context.fillStyle = "#fff";
 	context.fillRect(0, 0, width, height);
-	context.globalCompositeOperation = "difference";
+	if (currentVideoConfig.invert) {
+		context.globalCompositeOperation = "difference";
+	}
 	context.drawImage(video, 0, 0, width, height);
 	const imageData = context.getImageData(0, 0, width, height);
 	const data = imageData.data;
@@ -108,11 +152,44 @@ const loopy = () => {
 			}
 		}
 	}
-	context.globalCompositeOperation = "source-over";
 	context.putImageData(imageData, 0, 0);
+	// console.log("blobs", blobs);
+	context.globalCompositeOperation = "source-over";
+	context.strokeStyle = "#000";
+	context.lineWidth = 2;
+	const centroidSize = 4;
+	for (let i = 0; i < blobs.length; i++) {
+		const blob = blobs[i];
+		if (blob.totalPixelCount < 100) {
+			continue;
+		}
+		context.beginPath();
+		context.moveTo(
+			blob.centroid[0] - centroidSize,
+			blob.centroid[1] - centroidSize,
+		);
+		context.lineTo(
+			blob.centroid[0] + centroidSize,
+			blob.centroid[1] + centroidSize,
+		);
+		context.stroke();
+		context.beginPath();
+		context.moveTo(
+			blob.centroid[0] + centroidSize,
+			blob.centroid[1] - centroidSize,
+		);
+		context.lineTo(
+			blob.centroid[0] - centroidSize,
+			blob.centroid[1] + centroidSize,
+		);
+		context.stroke();
+	}
 };
 
 startButton.addEventListener("click", () => {
+	hasGestured = true;
 	video.play();
 	requestAnimationFrame(loopy);
 });
+
+setCurrentVideoName("tatsuya_m-splitting_lens.mp4");
