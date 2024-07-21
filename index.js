@@ -30,7 +30,7 @@ let currentVideoConfig = null;
 const setCurrentVideoName = (name) => {
 	currentVideoConfig = videos[name];
 	video.src = `videos/${name}`;
-	video.playbackRate = 0.25;
+	// video.playbackRate = 0.25;
 	if (hasGestured) {
 		video.play();
 	}
@@ -54,14 +54,30 @@ const contrast = (r, g, b) => {
 	return total > currentVideoConfig.threshold;
 };
 
+const maxBlobDistance = 3;
 const getPixelOffset = (x, y) => x + y * width;
 const isAboveThreshold = (imageData, x, y) => {
 	const i = getPixelOffset(x, y) * 4;
 	const data = imageData.data;
 	return contrast(data[i], data[i + 1], data[i + 2]);
 };
+const neighborOffsets = [
+	[-1, -1],
+	[0, -1],
+	[1, -1],
+	[-1, 0],
+	[1, 0],
+	[-1, 1],
+	[0, 1],
+	[1, 1],
+];
 const createBlob = (imageData, membership, blobs, startX, startY) => {
-	const coordsToProcess = [[startX, startY]];
+	// TODO: reuse the same array
+	const bestDistances = new Uint16Array(width, height);
+	const coordsToProcess = [
+		// X coordinate, Y coordinate, distance from blob
+		[startX, startY, 1],
+	];
 	const blobId = blobs.length + 1;
 	const blob = {
 		blobId,
@@ -74,44 +90,57 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 	let sumOfY = 0;
 	while (coordsToProcess.length > 0) {
 		const coords = coordsToProcess.pop();
-		if (
-			coords[0] < 0 ||
-			coords[0] >= width ||
-			coords[1] < 0 ||
-			coords[1] >= height
-		) {
-			// the pixel would be outside the image, move on to another
-			continue;
-		}
 		const offset = getPixelOffset(coords[0], coords[1]);
 		if (membership[offset] !== 0) {
 			// the pixel in question was already handled, move on to another
 			continue;
 		}
+		let neighborDistance = 1;
+		let isInBlob = true;
 		if (!isAboveThreshold(imageData, coords[0], coords[1])) {
-			// the pixel is not part of a blob, move on to another
-			continue;
+			// the pixel is not part of a blob, but it may connect us to a
+			// nearby not-quite-contiguous blob
+			isInBlob = false;
+			neighborDistance = coords[2] + 1;
+			if (bestDistances[offset] != 0 && bestDistances[offset] <= coords[2]) {
+				continue;
+			}
 		}
-		// if we reach this point, that pixel is part of this blob.
-		// handle it...
-		blob.totalPixelCount += 1;
-		sumOfX += coords[0];
-		sumOfY += coords[1];
-		membership[offset] = blob.blobId;
-		const data = imageData.data;
-		const i = offset * 4;
-		data[i] = blob.uniqueColor[0];
-		data[i + 1] = blob.uniqueColor[1];
-		data[i + 2] = blob.uniqueColor[2];
-		// ...and handle its neighbors.
-		coordsToProcess.push([coords[0] - 1, coords[1] - 1]);
-		coordsToProcess.push([coords[0], coords[1] - 1]);
-		coordsToProcess.push([coords[0] + 1, coords[1] - 1]);
-		coordsToProcess.push([coords[0] - 1, coords[1]]);
-		coordsToProcess.push([coords[0] + 1, coords[1]]);
-		coordsToProcess.push([coords[0] - 1, coords[1] + 1]);
-		coordsToProcess.push([coords[0], coords[1] + 1]);
-		coordsToProcess.push([coords[0] + 1, coords[1] + 1]);
+		// if the pixel is part of this blob, handle it
+		if (isInBlob) {
+			blob.totalPixelCount += 1;
+			sumOfX += coords[0];
+			sumOfY += coords[1];
+			membership[offset] = blob.blobId;
+			const data = imageData.data;
+			const i = offset * 4;
+			data[i] = blob.uniqueColor[0];
+			data[i + 1] = blob.uniqueColor[1];
+			data[i + 2] = blob.uniqueColor[2];
+		}
+		// if the distance isn't too great, handle neighbors;
+		if (neighborDistance >= maxBlobDistance) continue;
+		for (let n = 0; n < neighborOffsets.length; ++n) {
+			let neighbor = neighborOffsets[n];
+			let x = coords[0] + neighbor[0];
+			let y = coords[1] + neighbor[1];
+			if (x < 0 || x >= width || y < 0 || y >= height) {
+				// the pixel would be outside the image, skip it
+				continue;
+			}
+			let offset = getPixelOffset(x, y);
+			if (membership[offset] !== 0) {
+				// it's already been processed, don't process it again
+				continue;
+			}
+			if (bestDistances[offset] > 0 && bestDistances <= neighborDistance) {
+				// we've already evaluated it from the same or better distance,
+				// don't process it again
+				continue;
+			}
+			bestDistances[offset] = neighborDistance;
+			coordsToProcess.push([x, y, neighborDistance]);
+		}
 	}
 	blob.centroid = [
 		sumOfX / blob.totalPixelCount,
@@ -154,8 +183,8 @@ const loopy = () => {
 	}
 	context.putImageData(imageData, 0, 0);
 	// console.log("blobs", blobs);
-	context.globalCompositeOperation = "source-over";
-	context.strokeStyle = "#000";
+	context.globalCompositeOperation = "difference";
+	context.strokeStyle = "#fff";
 	context.lineWidth = 2;
 	const centroidSize = 4;
 	for (let i = 0; i < blobs.length; i++) {
