@@ -19,6 +19,10 @@ const videos = {
 		threshold: 0.9 * bright,
 		invert: false,
 	},
+	"admiral_potato-11th_hour_hotness.webm": {
+		threshold: 0.1 * bright,
+		invert: false,
+	},
 };
 Object.entries(videos).forEach(([name, config]) => {
 	const option = document.createElement("option");
@@ -30,6 +34,7 @@ let currentVideoConfig = null;
 const setCurrentVideoName = (name) => {
 	currentVideoConfig = videos[name];
 	video.src = `videos/${name}`;
+	videoSelect.value = name;
 	// video.playbackRate = 0.25;
 	if (hasGestured) {
 		video.play();
@@ -84,6 +89,10 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 		uniqueColor: uniqueColors[(blobId - 1) % uniqueColors.length],
 		totalPixelCount: 0,
 		centroid: null,
+		xMin: startX,
+		yMin: startY,
+		xMax: startX,
+		yMax: startY,
 	};
 	blobs.push(blob);
 	let sumOfX = 0;
@@ -117,6 +126,10 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 			data[i] = blob.uniqueColor[0];
 			data[i + 1] = blob.uniqueColor[1];
 			data[i + 2] = blob.uniqueColor[2];
+			blob.xMin = Math.min(blob.xMin, coords[0]);
+			blob.yMin = Math.min(blob.yMin, coords[1]);
+			blob.xMax = Math.max(blob.xMax, coords[0]);
+			blob.yMax = Math.max(blob.yMax, coords[1]);
 		}
 		// if the distance isn't too great, handle neighbors;
 		if (neighborDistance >= maxBlobDistance) continue;
@@ -212,6 +225,14 @@ const loopy = () => {
 			blob.centroid[1] + centroidSize,
 		);
 		context.stroke();
+		context.beginPath();
+		context.rect(
+			blob.xMin,
+			blob.yMin,
+			blob.xMax - blob.xMin,
+			blob.yMax - blob.yMin,
+		);
+		context.stroke();
 	}
 };
 
@@ -221,4 +242,4 @@ startButton.addEventListener("click", () => {
 	requestAnimationFrame(loopy);
 });
 
-setCurrentVideoName("tatsuya_m-splitting_lens.mp4");
+setCurrentVideoName("admiral_potato-11th_hour_hotness.webm");
