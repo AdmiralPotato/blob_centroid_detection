@@ -35,6 +35,14 @@ const videos = {
 		threshold: 0.7 * bright,
 		invert: false,
 	},
+	"admiral_potato-sparkle_party.webm": {
+		threshold: 0.5 * bright,
+		invert: false,
+	},
+	"admiral_potato-hex_doctor.webm": {
+		threshold: 0.5 * bright,
+		invert: false,
+	},
 };
 Object.entries(videos).forEach(([name, config]) => {
 	const option = document.createElement("option");
