@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Blob Centroid Detection</title>
+		<style>
+			body {
+				background-color: #333;
+				text-align: center;
+				margin: 0;
+				padding: 32px;
+			}
+			canvas,
+			video {
+				display: block;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<button id="start-button">Start</button>
+			<canvas
+				id="canny"
+				width="256"
+				height="256"
+				style="border: 1px solid #666"
+			></canvas>
+			<video id="blobby" autoplay loop src="video_source.mp4"></video>
+		</div>
+		<script src="index.js"></script>
+	</body>
+</html>
