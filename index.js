@@ -19,6 +19,10 @@ const videos = {
 		threshold: 0.3 * bright,
 		invert: true,
 	},
+	"tatsuya_m-rewrapping_tennis_balls.mp4": {
+		threshold: 0.25 * bright,
+		invert: true,
+	},
 	"admiral_potato-electric_branches.webm": {
 		threshold: 0.9 * bright,
 		invert: false,
