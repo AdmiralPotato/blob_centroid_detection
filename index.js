@@ -1,7 +1,7 @@
 const canvas = document.getElementById("canny");
 const startButton = document.getElementById("start-button");
 const videoSelect = document.getElementById("video-select");
-const { width, height } = canvas;
+let { width, height } = canvas;
 const video = document.getElementById("blobby");
 const context = canvas.getContext("2d", { willReadFrequently: true });
 context.imageSmoothingEnabled = true;
@@ -11,6 +11,10 @@ console.log("Context?", context);
 let hasGestured = false;
 const bright = 255 * 3;
 const videos = {
+	"admiral_potato-helpful_goose.webm": {
+		threshold: 0.8 * bright,
+		invert: false,
+	},
 	"tatsuya_m-splitting_lens.mp4": {
 		threshold: 0.3 * bright,
 		invert: true,
@@ -262,4 +266,10 @@ startButton.addEventListener("click", () => {
 	requestAnimationFrame(loopy);
 });
 
-setCurrentVideoName("admiral_potato-11th_hour_hotness.webm");
+video.addEventListener("resize", () => {
+	const rect = video.getBoundingClientRect();
+	height = Math.min(width, width * (rect.height / rect.width));
+	canvas.height = height;
+});
+
+setCurrentVideoName("admiral_potato-helpful_goose.webm");
