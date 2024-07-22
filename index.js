@@ -55,6 +55,11 @@ const videos = {
 		threshold: 0.5 * bright,
 		invert: false,
 	},
+	"admiral_potato-ibuprofen_spinning.webm": {
+		threshold: 0.5 * bright,
+		invert: false,
+		background: "#000",
+	},
 };
 Object.entries(videos).forEach(([name, config]) => {
 	const option = document.createElement("option");
@@ -204,7 +209,7 @@ const getBlobForPixel = (membership, blobs, x, y) => {
 const loopy = () => {
 	requestAnimationFrame(loopy);
 	context.globalCompositeOperation = "source-over";
-	context.fillStyle = "#fff";
+	context.fillStyle = currentVideoConfig.background || "#fff";
 	context.fillRect(0, 0, width, height);
 	if (currentVideoConfig.invert) {
 		context.globalCompositeOperation = "difference";
