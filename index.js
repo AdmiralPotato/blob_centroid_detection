@@ -43,6 +43,10 @@ const videos = {
 		threshold: 0.5 * bright,
 		invert: false,
 	},
+	"admiral_potato-candy_corn_rain.webm": {
+		threshold: 0.6 * bright,
+		invert: false,
+	},
 	"admiral_potato-hex_doctor.webm": {
 		threshold: 0.5 * bright,
 		invert: false,
