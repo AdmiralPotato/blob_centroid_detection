@@ -5,6 +5,11 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Blob Centroid Detection</title>
 		<style>
+			* {
+				color: #fff;
+				font-family: monospace;
+				font-size: 16px;
+			}
 			body {
 				background-color: #333;
 				text-align: center;
@@ -14,6 +19,26 @@
 			.io {
 				line-height: 0;
 				font-size: 0;
+			}
+			.form-field label {
+				display: block;
+				text-align: left;
+			}
+			.form-field label span {
+				display: block;
+			}
+			.form-field label input,
+			.form-field label button,
+			.form-field label select {
+				display: inline-block;
+				background-color: #0008;
+				border: 1px solid #6668;
+			}
+			.form-field label input[type="number"] {
+				width: 5rem;
+			}
+			.form-field label input[type="range"] {
+				width: calc(50% - 10rem);
 			}
 			canvas,
 			video {
@@ -28,18 +53,116 @@
 					width: 100%;
 					max-width: 100%;
 				}
+				.form-field label input[type="range"] {
+					width: calc(100% - 8rem);
+				}
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
 			<div>
-				<button id="start-button">Start</button>
-				<select id="video-select"></select>
+				<div class="form-field">
+					<label>
+						<span>Video</span>
+						<button id="start-button">Start</button>
+						<select id="video-select"></select>
+					</label>
+				</div>
+				<div class="form-field">
+					<label>
+						<span>Data Image Width</span>
+						<input
+							type="number"
+							min="64"
+							max="512"
+							value="384"
+							step="16"
+							id="input-width-number"
+						/>
+						<input
+							type="range"
+							min="64"
+							max="512"
+							value="384"
+							step="16"
+							id="input-width"
+						/>
+					</label>
+				</div>
+				<div class="form-field">
+					<label>
+						<span>Pixel Gap (VERY EXPENSIVE)</span>
+						<input
+							type="number"
+							min="0"
+							max="5"
+							value="3"
+							step="1"
+							id="input-gap-number"
+						/>
+						<input
+							type="range"
+							min="0"
+							max="5"
+							value="3"
+							step="1"
+							id="input-gap"
+						/>
+					</label>
+				</div>
+				<div class="form-field">
+					<label>
+						<span>Threshhold</span>
+						<input
+							type="number"
+							min="0"
+							max="765"
+							value="382"
+							step="1"
+							id="input-threshold-number"
+						/>
+						<input
+							type="range"
+							min="0"
+							max="765"
+							value="382"
+							step="1"
+							id="input-threshold"
+						/>
+					</label>
+				</div>
+				<div class="form-field">
+					<label>
+						<span>Minimum Blob Size</span>
+						<input
+							type="number"
+							min="10"
+							max="300"
+							value="100"
+							step="10"
+							id="input-size-number"
+						/>
+						<input
+							type="range"
+							min="10"
+							max="300"
+							value="100"
+							step="10"
+							id="input-size"
+						/>
+					</label>
+				</div>
+				<div class="form-field">
+					<label>
+						<span>Last frame compute time:</span>
+						<input type="number" id="input-time" disabled />
+					</label>
+				</div>
 			</div>
 			<div class="io">
 				<canvas id="canny" width="384" height="384"></canvas>
-				<video id="blobby" autoplay loop src="video_source.mp4"></video>
+				<video id="blobby" autoplay loop></video>
 			</div>
 		</div>
 		<script src="index.js"></script>

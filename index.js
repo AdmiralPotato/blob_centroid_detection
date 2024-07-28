@@ -1,12 +1,62 @@
 const canvas = document.getElementById("canny");
 const startButton = document.getElementById("start-button");
 const videoSelect = document.getElementById("video-select");
+const inputWidthNumber = document.getElementById("input-width-number");
+const inputWidth = document.getElementById("input-width");
+const inputGapNumber = document.getElementById("input-gap-number");
+const inputGap = document.getElementById("input-gap");
+const inputThresholdNumber = document.getElementById("input-threshold-number");
+const inputThreshold = document.getElementById("input-threshold");
+const inputSizeNumber = document.getElementById("input-size-number");
+const inputSize = document.getElementById("input-size");
+const inputTime = document.getElementById("input-time");
 let { width, height } = canvas;
 const video = document.getElementById("blobby");
 const context = canvas.getContext("2d", { willReadFrequently: true });
 context.imageSmoothingEnabled = true;
 context.imageSmoothingQuality = "high";
 console.log("Context?", context);
+
+const handleWidthInput = (event) => {
+	const value = event.target.value * 1 || 64;
+	width = value;
+	canvas.width = width;
+	inputWidth.value = value;
+	inputWidthNumber.value = value;
+	handleResize();
+};
+inputWidthNumber.addEventListener("input", handleWidthInput);
+inputWidth.addEventListener("input", handleWidthInput);
+
+let maxPixelGap = 3;
+const handleGapInput = (event) => {
+	const value = event.target.value * 1 || 0;
+	maxPixelGap = value;
+	inputGap.value = value;
+	inputGapNumber.value = value;
+};
+inputGapNumber.addEventListener("input", handleGapInput);
+inputGap.addEventListener("input", handleGapInput);
+
+let threshold = 100;
+const handleThreshholdInput = (event) => {
+	const value = event.target.value * 1 || 0;
+	threshold = value;
+	inputThreshold.value = value;
+	inputThresholdNumber.value = value;
+};
+inputThresholdNumber.addEventListener("input", handleThreshholdInput);
+inputThreshold.addEventListener("input", handleThreshholdInput);
+
+let minBlobSize = 100;
+const handleSizeInput = (event) => {
+	const value = event.target.value * 1 || 0;
+	minBlobSize = value;
+	inputSize.value = value;
+	inputSizeNumber.value = value;
+};
+inputSizeNumber.addEventListener("input", handleSizeInput);
+inputSize.addEventListener("input", handleSizeInput);
 
 let hasGestured = false;
 const bright = 255 * 3;
@@ -70,6 +120,9 @@ Object.entries(videos).forEach(([name, config]) => {
 let currentVideoConfig = null;
 const setCurrentVideoName = (name) => {
 	currentVideoConfig = videos[name];
+	threshold = currentVideoConfig.threshold;
+	inputThreshold.value = threshold;
+	inputThresholdNumber.value = threshold;
 	video.src = `videos/${name}`;
 	videoSelect.value = name;
 	// video.playbackRate = 0.25;
@@ -93,10 +146,9 @@ const uniqueColors = [
 
 const contrast = (r, g, b) => {
 	const total = r + g + b;
-	return total > currentVideoConfig.threshold;
+	return total > threshold;
 };
 
-const maxBlobDistance = 3;
 const getPixelOffset = (x, y) => x + y * width;
 const isAboveThreshold = (imageData, x, y) => {
 	const i = getPixelOffset(x, y) * 4;
@@ -169,7 +221,7 @@ const createBlob = (imageData, membership, blobs, startX, startY) => {
 			blob.yMax = Math.max(blob.yMax, coords[1]);
 		}
 		// if the distance isn't too great, handle neighbors;
-		if (neighborDistance >= maxBlobDistance) continue;
+		if (neighborDistance >= maxPixelGap) continue;
 		for (let n = 0; n < neighborOffsets.length; ++n) {
 			let neighbor = neighborOffsets[n];
 			let x = coords[0] + neighbor[0];
@@ -208,6 +260,7 @@ const getBlobForPixel = (membership, blobs, x, y) => {
 
 const loopy = () => {
 	requestAnimationFrame(loopy);
+	const start = Date.now();
 	context.globalCompositeOperation = "source-over";
 	context.fillStyle = currentVideoConfig.background || "#fff";
 	context.fillRect(0, 0, width, height);
@@ -239,7 +292,7 @@ const loopy = () => {
 	const centroidSize = 4;
 	for (let i = 0; i < blobs.length; i++) {
 		const blob = blobs[i];
-		if (blob.totalPixelCount < 100) {
+		if (blob.totalPixelCount < minBlobSize) {
 			continue;
 		}
 		context.beginPath();
@@ -271,6 +324,8 @@ const loopy = () => {
 		);
 		context.stroke();
 	}
+	const end = Date.now();
+	inputTime.value = end - start;
 };
 
 startButton.addEventListener("click", () => {
@@ -279,10 +334,11 @@ startButton.addEventListener("click", () => {
 	requestAnimationFrame(loopy);
 });
 
-video.addEventListener("resize", () => {
+const handleResize = () => {
 	const rect = video.getBoundingClientRect();
 	height = Math.min(width, width * (rect.height / rect.width));
 	canvas.height = height;
-});
+};
+video.addEventListener("resize", handleResize);
 
 setCurrentVideoName("admiral_potato-helpful_goose.webm");
